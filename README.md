@@ -15,7 +15,7 @@ The Garden App is a mobile application built with Flutter that helps users plan 
 - Run the app on your chosen connected device using `flutter run`.
 
 ## Screenshots
-![Spring](screenshots/sapp_spring.jpg)
+![Spring](screenshots/app_spring.jpg)
 ![Plant_List](screenshots/app_list.jpg)
 ![Summer](screenshots/app_summer.jpg)
 ![fall](screenshots/app_fall.jpg)
