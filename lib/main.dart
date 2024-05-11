@@ -1,6 +1,7 @@
 // ignore_for_file: prefer_const_constructors
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   runApp(GardenApp());
@@ -34,14 +35,25 @@ class GardenAppState extends ChangeNotifier {
   List<String> winterPlants = ['...'];
   final TextEditingController plantController = TextEditingController();
 
+  GardenAppState() {
+  // Load plant lists from SharedPreferences
+  SharedPreferences.getInstance().then((prefs) {
+    springPlants = prefs.getStringList('springPlants') ?? [];
+    summerPlants = prefs.getStringList('summerPlants') ?? [];
+    fallPlants = prefs.getStringList('fallPlants') ?? [];
+    winterPlants = prefs.getStringList('winterPlants') ?? [];
+    notifyListeners();
+  });
+}
+
   void changeSeason(String season) {
     //changes season based on button press
     selectedSeason = season;
     notifyListeners();
   }
 
-  void addPlant(String plantName) {
-    //adds plant to the correct season list
+  void addPlant(String plantName) async{
+    // adds plant to the correct season list
     if (plantName.isNotEmpty) {
       switch (selectedSeason) {
         case 'spring':
@@ -61,11 +73,18 @@ class GardenAppState extends ChangeNotifier {
       }
     plantController.clear();
     notifyListeners();
+
+    // Save plant lists to SharedPreferences
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    prefs.setStringList('springPlants', springPlants);
+    prefs.setStringList('summerPlants', summerPlants);
+    prefs.setStringList('fallPlants', fallPlants);
+    prefs.setStringList('winterPlants', winterPlants);
   }
 }
   
   ThemeData getTheme() {
-    //for changing theme based on season
+    // for changing theme based on season
     switch (selectedSeason) {
       case 'spring':
         return ThemeData(
