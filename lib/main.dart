@@ -7,8 +7,10 @@ void main() {
   runApp(GardenApp());
 }
 
+
 class GardenApp extends StatelessWidget {
   const GardenApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
@@ -26,25 +28,67 @@ class GardenApp extends StatelessWidget {
   }
 }
 
+
 class GardenAppState extends ChangeNotifier {
-  //defines seaason change for buttons, seasonal plant lists and themes
+  //defines season change for buttons, seasonal tasks and plant lists, and themes
   String selectedSeason = 'spring';
+  //change to depend on current date?
   List<String> springPlants = ['Bok Choy', 'Spinach'];
   List<String> summerPlants = ['Corn', 'Cucumbers'];
   List<String> fallPlants = ['Spinach', 'Tulip bulbs'];
   List<String> winterPlants = ['...'];
+  List<String> springTasks = []; // Define and initialize seasonal tasks
+  List<String> summerTasks = []; 
+  List<String> fallTasks = [];   
+  List<String> winterTasks = [];
+  List<String> taskCompletionStatus = [];
+  List<String> plantCompletionStatus = []; 
   final TextEditingController plantController = TextEditingController();
+  final TextEditingController taskController = TextEditingController(); 
 
   GardenAppState() {
-  // Load plant lists from SharedPreferences
-  SharedPreferences.getInstance().then((prefs) {
-    springPlants = prefs.getStringList('springPlants') ?? [];
-    summerPlants = prefs.getStringList('summerPlants') ?? [];
-    fallPlants = prefs.getStringList('fallPlants') ?? [];
-    winterPlants = prefs.getStringList('winterPlants') ?? [];
+  // Load plant lists
+    SharedPreferences.getInstance().then((prefs) {
+      springPlants = prefs.getStringList('springPlants') ?? [];
+      summerPlants = prefs.getStringList('summerPlants') ?? [];
+      fallPlants = prefs.getStringList('fallPlants') ?? [];
+      winterPlants = prefs.getStringList('winterPlants') ?? [];
+      springTasks = prefs.getStringList('springTasks') ?? []; 
+      summerTasks = prefs.getStringList('summerTasks') ?? []; 
+      fallTasks = prefs.getStringList('fallTasks') ?? [];     
+      winterTasks = prefs.getStringList('winterTasks') ?? [];
+
+      taskCompletionStatus = [
+              ...List.generate(springTasks.length, (index) => springTasks.isEmpty ? 'false' : springTasks[index] == '1' ? 'true' : 'false'),
+              ...List.generate(summerTasks.length, (index) => summerTasks[index] == '1' ? 'true' : 'false'),
+              ...List.generate(fallTasks.length, (index) => fallTasks[index] == '1' ? 'true' : 'false'),
+              ...List.generate(winterTasks.length, (index) => winterTasks[index] == '1' ? 'true' : 'false'),
+              ];
+
+              // Initialize plant completion status based on stored string lists
+              plantCompletionStatus = [
+              ...List.generate(springPlants.length, (idx) => prefs.getStringList('springPlantsStatus')?[idx] == '1' ? 'true' : 'false'),
+              ...List.generate(summerPlants.length, (idx) => prefs.getStringList('summerPlantsStatus')?[idx] == '1' ? 'true' : 'false'),
+              ...List.generate(fallPlants.length, (idx) => prefs.getStringList('fallPlantsStatus')?[idx] == '1' ? 'true' : 'false'),
+              ...List.generate(winterPlants.length, (idx) => prefs.getStringList('winterPlantsStatus')?[idx] == '1' ? 'true' : 'false'),
+            ];
+            
+            notifyListeners();
+          });
+        } 
+        void togglePlantCompletionStatus(int idx) {
+          // Toggle the completion status of the plant at given index
+          plantCompletionStatus[idx] = 
+            plantCompletionStatus[idx] == 'true' ? 'false' : 'true';
+          notifyListeners();
+        }
+
+        void toggleTaskCompletionStatus(int idx) {
+          // Toggle the completion status of a task
+          taskCompletionStatus[idx] = 
+            taskCompletionStatus[idx] == 'true' ? 'false' : 'true';
     notifyListeners();
-  });
-}
+  }
 
   void changeSeason(String season) {
     //changes season based on button press
@@ -71,18 +115,52 @@ class GardenAppState extends ChangeNotifier {
         default:
           throw 'Unknown season: $selectedSeason';
       }
-    plantController.clear();
+      plantController.clear();
+      notifyListeners();
+      // Save plant lists
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      prefs.setStringList('springPlants', springPlants);
+      prefs.setStringList('summerPlants', summerPlants);
+      prefs.setStringList('fallPlants', fallPlants);
+      prefs.setStringList('winterPlants', winterPlants);
+    }
+  }
+  
+  void addTask(String taskName) async{
+    // adds task to the correct season list
+    if (taskName.isNotEmpty) {
+      switch (selectedSeason) {
+      case 'spring':
+        springTasks.add(taskName);
+        taskCompletionStatus.add("0"); // 0 represents unchecked
+        break;
+      case 'summer':
+        summerTasks.add(taskName);
+        taskCompletionStatus.add('0');
+        break;
+      case 'fall':
+        fallTasks.add(taskName);
+        taskCompletionStatus.add('0');
+        break;
+      case 'winter':
+        winterTasks.add(taskName);
+        taskCompletionStatus.add('0');
+        break;
+      default:
+        throw 'Unknown season: $selectedSeason';
+    }
+    taskController.clear();
     notifyListeners();
 
-    // Save plant lists to SharedPreferences
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    prefs.setStringList('springPlants', springPlants);
-    prefs.setStringList('summerPlants', summerPlants);
-    prefs.setStringList('fallPlants', fallPlants);
-    prefs.setStringList('winterPlants', winterPlants);
+    prefs.setStringList('springTasks', springTasks);
+    prefs.setStringList('summerTasks', summerTasks);
+    prefs.setStringList('fallTasks', fallTasks);
+    prefs.setStringList('winterTasks', winterTasks);
+    prefs.setStringList('taskCompletionStatus', taskCompletionStatus); // Store status as string list
   }
 }
-  
+
   ThemeData getTheme() {
     // for changing theme based on season
     switch (selectedSeason) {
@@ -93,6 +171,11 @@ class GardenAppState extends ChangeNotifier {
             background: Colors.cyan.shade200,
             onBackground: Colors.purple.shade300,
           ),
+          textSelectionTheme: TextSelectionThemeData(
+            // cursor & text selection color for input
+            selectionColor: Colors.green.shade50,
+            cursorColor: Colors.green.shade50, 
+          ),
         );
       case 'summer':
         return ThemeData(
@@ -100,6 +183,11 @@ class GardenAppState extends ChangeNotifier {
             seedColor: Colors.pink.shade50,
             background: Colors.yellow.shade200,
             onBackground: Colors.teal.shade300,
+          ),
+          textSelectionTheme: TextSelectionThemeData(
+            // cursor & text selection color for input
+            selectionColor: Colors.pink.shade50,
+            cursorColor: Colors.pink.shade50, 
           ),
         );
       case 'fall':
@@ -109,6 +197,11 @@ class GardenAppState extends ChangeNotifier {
             background: Colors.orange.shade600,
             onBackground: Colors.amber.shade500,
           ),
+          textSelectionTheme: TextSelectionThemeData(
+            // cursor & text selection color for input
+            selectionColor: Colors.brown.shade700,
+            cursorColor: Colors.brown.shade700, 
+          ),
         );
       case 'winter':
         return ThemeData(
@@ -117,6 +210,11 @@ class GardenAppState extends ChangeNotifier {
             background: Colors.blueGrey.shade400,
             onBackground: Colors.white,
           ),
+            textSelectionTheme: TextSelectionThemeData(
+            // cursor & text selection color for input
+            selectionColor: Colors.green.shade50,
+            cursorColor: Colors.green.shade50,
+          ), 
         );
       default:
         return ThemeData.light();
@@ -208,11 +306,31 @@ class GardenHomePage extends StatelessWidget {
                 season: gardenAppState.selectedSeason,
                 onAddPlant: gardenAppState.addPlant,
               ),
+              SizedBox(height: 20),
+              Tasks(
+                onAddTask: gardenAppState.addTask,
+                tasks: getSeasonalTasks(gardenAppState),
+              )
             ],
           ),
         ),
       ),
     );
+  }
+  List<String> getSeasonalTasks(GardenAppState gardenAppState) {
+    //returns the correct task list based on season
+    switch (gardenAppState.selectedSeason) {
+      case 'spring':
+        return gardenAppState.springTasks;
+      case 'summer':
+        return gardenAppState.summerTasks;
+      case 'fall':
+        return gardenAppState.fallTasks;
+      case 'winter':
+        return gardenAppState.winterTasks;
+      default:
+        return [];
+    }
   }
 }
 
@@ -276,6 +394,7 @@ class HeaderWidget extends StatelessWidget {
   }
 }
 
+
 class SeasonSection extends StatelessWidget {
     //sets season title and calls plant list within
   final String season;
@@ -286,6 +405,7 @@ class SeasonSection extends StatelessWidget {
     required this.season,
     required this.onAddPlant,
   });
+
 
   @override
   Widget build(BuildContext context) {
@@ -321,6 +441,7 @@ class SeasonSection extends StatelessWidget {
     );
   }
 }
+
 
 class PlantList extends StatelessWidget {
   //For plant list
@@ -415,14 +536,162 @@ class PlantList extends StatelessWidget {
             Column(
               children: List.generate(
                 plants.length,
-                (index) => ListTile(
-                  title: Text(
-                    plants[index],
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: theme.colorScheme.onBackground,
-                      fontSize: 14.0,
+                (idx) => ListTile(
+                  title: Row(
+                    children: [
+                      Checkbox(
+                        value: idx < gardenAppState.plantCompletionStatus.  length &&
+                          gardenAppState.plantCompletionStatus[idx] == 'true',
+                        onChanged: (value) {
+                          // Toggle task completion status
+                          gardenAppState.togglePlantCompletionStatus(idx);
+                        },
                       ),
+                      Expanded(
+                        child: Text(
+                          plants[idx],
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: theme.colorScheme.onBackground,
+                            fontSize: 14.0,
+                            decoration: idx < gardenAppState.plantCompletionStatus.length && gardenAppState.plantCompletionStatus[idx] == 'true'
+                            ? TextDecoration.lineThrough
+                            : TextDecoration.none,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),  
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  List<String> getSeasonalPlants(GardenAppState gardenAppState) {
+    switch (gardenAppState.selectedSeason) {
+      case 'spring':
+        return gardenAppState.springPlants;
+      case 'summer':
+        return gardenAppState.summerPlants;
+      case 'fall':
+        return gardenAppState.fallPlants;
+      case 'winter':
+        return gardenAppState.winterPlants;
+      default:
+        return [];
+    }
+  }
+}
+
+
+class Tasks extends StatelessWidget {
+  //For task list
+  final Function(String) onAddTask;
+  final List<String> tasks;
+
+  const Tasks({
+    super.key,
+    required this.onAddTask,
+    required this.tasks,
+  });
+  
+  @override
+  Widget build(BuildContext context) {
+    var gardenAppState  = Provider.of<GardenAppState>(context);
+    ThemeData theme = Theme.of(context);
+    final List<String> tasks = getSeasonalTasks(gardenAppState);
+
+    //card to contain the list of tasks
+    return Card(
+      color: theme.colorScheme.primary,
+      shadowColor: theme.colorScheme.onPrimary,
+      elevation: 6,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(50.0),
+      ),
+      child: SizedBox(
+        width: 300,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: SizedBox(
+                width: 250,
+                child: TextField(
+                  controller: gardenAppState.taskController,
+                  decoration: InputDecoration(
+                    fillColor: theme.colorScheme.primary,                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(
+                        color: theme.colorScheme.background,
+                        width: 2.0,
+                      ),
+                    ),
+                    labelText: 'What needs to be done?',
+                    labelStyle: TextStyle(
+                      color: theme.colorScheme.onBackground,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    hintText: "Enter a task: (water, weed, etc.)",
+                    hintStyle: TextStyle(
+                      color: theme.colorScheme.onPrimary,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                //add the task to the list
+                String taskName = gardenAppState.taskController.text;
+                gardenAppState.addTask(taskName); 
+                gardenAppState.taskController.clear();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: theme.colorScheme.background,
+                foregroundColor: theme.colorScheme.onBackground,
+              ),
+              child: const Text('Add Task'),
+            ),
+            SizedBox(height:10),
+            Text(
+              "To Be Done:",
+              style: TextStyle(
+                fontSize: 16.0,
+                fontWeight: FontWeight.bold,
+                color: theme.colorScheme.background,
+              ),
+            ),
+            Column(
+              children: List.generate(
+                tasks.length,
+                (idx) => ListTile(
+                  title: Row(
+                    children: [
+                      Checkbox(
+                        value: idx < gardenAppState.taskCompletionStatus.length && gardenAppState.taskCompletionStatus[idx] == 'true',
+                        onChanged: (value) {
+                          // Toggle task completion status
+                          gardenAppState.toggleTaskCompletionStatus(idx);
+                        },
+                      ),
+                      Expanded(
+                        child: Text(
+                          tasks[idx],
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: theme.colorScheme.onBackground,
+                            fontSize: 14.0,
+                            decoration: idx < gardenAppState.taskCompletionStatus.length && gardenAppState.taskCompletionStatus[idx] == 'true' 
+                            ? TextDecoration.lineThrough 
+                            : TextDecoration.none,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -432,38 +701,20 @@ class PlantList extends StatelessWidget {
       ),
     );
   }
+  List<String> getSeasonalTasks(GardenAppState gardenAppState) {
+    switch (gardenAppState.selectedSeason) {
+      case 'spring':
+        return gardenAppState.springTasks;
+      case 'summer':
+        return gardenAppState.summerTasks;
+      case 'fall':
+        return gardenAppState.fallTasks;
+      case 'winter':
+        return gardenAppState.winterTasks;
+      default:
+        return [];
+    }
+  }
 }
-
-
-// adding in later
-// class tasks extends StatelessWidget {
-//   //For task list
-//   final Function(String) onAddTask;
-
-//   const tasks({
-//     super.key,
-//     required this.onAddTask,
-//   });
-
-//   @override
-//   Widget build(BuildContext context) {
-//     var gardenAppState  = Provider.of<GardenAppState>(context);
-//     final List<String> tasks;
-
-//     switch (gardenAppState.selectedSeason) {
-//       case 'spring':
-//         tasks = gardenAppState.springTasks;
-//         break;
-//       case 'summer':
-//         tasks = gardenAppState.summerTasks;
-//         break;
-//       case 'fall':
-//         tasks = gardenAppState.fallTasks;
-//         break;
-//       case 'winter':
-//         tasks = gardenAppState.winterTasks;
-//         break;
-//       default:
-//         tasks = [];
-//     }
 // To Be continued.....
+// Add in place to add gardens/spaces, with separate, seasonal task and plant lists instead of one plant and task list for each season
