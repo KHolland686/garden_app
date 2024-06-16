@@ -15,10 +15,10 @@ class Tasks extends StatelessWidget {
   
   @override
   Widget build(BuildContext context) {
-    var gardenAppState  = Provider.of<GardenAppState>(context);
+    var gardenAppState  = context.watch<GardenAppState>();
     ThemeData theme = Theme.of(context);
-    final List<String> tasks = getSeasonalTasks(gardenAppState);
-
+    // final List<String> tasks = getSeasonalTasks(gardenAppState);
+    
     //card to contain the list of tasks
     return Card(
       color: theme.colorScheme.primary,
@@ -80,54 +80,123 @@ class Tasks extends StatelessWidget {
                 color: theme.colorScheme.background,
               ),
             ),
-            Column(
-              children: List.generate(
-                tasks.length,
-                (idx) => ListTile(
-                  title: Row(
-                    children: [
-                      Checkbox(
-                        value: idx < gardenAppState.taskCompletionStatus.length && gardenAppState.taskCompletionStatus[idx] == 'true',
-                        onChanged: (value) {
-                          // Toggle task completion status
-                          gardenAppState.toggleTaskCompletionStatus(idx);
-                        },
-                      ),
-                      Expanded(
-                        child: Text(
-                          tasks[idx],
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: theme.colorScheme.onBackground,
-                            fontSize: 14.0,
-                            decoration: idx < gardenAppState.taskCompletionStatus.length && gardenAppState.taskCompletionStatus[idx] == 'true' 
-                            ? TextDecoration.lineThrough 
-                            : TextDecoration.none,
-                          ),
-                        ),
-                      ),
-                    ],
+            ListView.builder(
+              shrinkWrap: true,
+              itemCount: tasks.length,
+              itemBuilder: (context, index) {
+                final task = tasks[index];
+                final isCompleted =
+                    gardenAppState.currentGardenSpace.taskCompletionStatus[gardenAppState.selectedSeason]?[index] ?? false;
+                return ListTile(
+                  leading: Checkbox(
+                    value: isCompleted,
+                    onChanged: (bool? value) {
+                      gardenAppState.toggleTaskCompletionStatus(index);
+                    },
                   ),
-                ),
-              ),
+                  title: Text(
+                    task,
+                    style: TextStyle(
+                      decoration: isCompleted ? TextDecoration.lineThrough : TextDecoration.none,
+                    ),
+                  ),
+                );
+              },
             ),
           ],
         ),
       ),
     );
   }
-  List<String> getSeasonalTasks(GardenAppState gardenAppState) {
-    switch (gardenAppState.selectedSeason) {
-      case 'spring':
-        return gardenAppState.springTasks;
-      case 'summer':
-        return gardenAppState.summerTasks;
-      case 'fall':
-        return gardenAppState.fallTasks;
-      case 'winter':
-        return gardenAppState.winterTasks;
-      default:
-        return [];
-    }
-  }
 }
+
+
+
+
+          // children: [
+          //   Text(
+          //     'Tasks',
+          //     style: TextStyle(
+          //       fontSize: 18,
+          //       fontWeight: FontWeight.bold,
+          //       fontFamily: 'Cursive',
+          //       color: theme.colorScheme.primary,
+          //     ),
+          //   ),
+          //   SizedBox(height: 10),
+            
+            // SizedBox(height: 10),
+            // Padding(
+            //   padding: const EdgeInsets.symmetric(horizontal: 20.0),
+            //   child: TextField(
+            //     controller: gardenAppState.taskController,
+            //     decoration: InputDecoration(
+            //       border: OutlineInputBorder(),
+            //       labelText: 'What needs to be done?',
+            //       labelStyle: TextStyle(
+            //         color: theme.colorScheme.onBackground,
+            //         fontWeight: FontWeight.bold,
+            //       ),              
+            //       hintText: 'Enter task name',
+            //       hintStyle: TextStyle(
+            //         color: theme.colorScheme.onPrimary,
+            //       ),
+            //       suffixIcon: IconButton(
+            //         onPressed: () {
+            //           onAddTask(gardenAppState.taskController.text);
+            //         },
+            //         icon: Icon(Icons.add),
+
+//     
+//     
+//             Column(
+//               children: List.generate(
+//                 tasks.length,
+//                 (idx) => ListTile(
+//                   title: Row(
+//                     children: [
+//                       Checkbox(
+//                         value: idx < gardenAppState.taskCompletionStatus.length && gardenAppState.taskCompletionStatus[idx] == 'true',
+//                         onChanged: (value) {
+//                           // Toggle task completion status
+//                           gardenAppState.toggleTaskCompletionStatus(idx);
+//                         },
+//                       ),
+//                       Expanded(
+//                         child: Text(
+//                           tasks[idx],
+//                           textAlign: TextAlign.center,
+//                           style: TextStyle(
+//                             color: theme.colorScheme.onBackground,
+//                             fontSize: 14.0,
+//                             decoration: idx < gardenAppState.taskCompletionStatus.length && gardenAppState.taskCompletionStatus[idx] == 'true' 
+//                             ? TextDecoration.lineThrough 
+//                             : TextDecoration.none,
+//                           ),
+//                         ),
+//                       ),
+//                     ],
+//                   ),
+//                 ),
+//               ),
+//             ),
+//           ],
+//         ),
+//       ),
+//     );
+//   }
+//   List<String> getSeasonalTasks(GardenAppState gardenAppState) {
+//     switch (gardenAppState.selectedSeason) {
+//       case 'spring':
+//         return gardenAppState.springTasks;
+//       case 'summer':
+//         return gardenAppState.summerTasks;
+//       case 'fall':
+//         return gardenAppState.fallTasks;
+//       case 'winter':
+//         return gardenAppState.winterTasks;
+//       default:
+//         return [];
+//     }
+//   }
+// }

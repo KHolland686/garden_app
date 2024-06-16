@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:garden_app/Widgets/plant_list.dart';
+import 'package:garden_app/Models/garden_app_state.dart';
 
 
 class SeasonSection extends StatelessWidget {
@@ -16,6 +18,7 @@ class SeasonSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    var gardenAppState = context.watch<GardenAppState>();
     ThemeData theme = Theme.of(context);
 
     return Column(
@@ -23,29 +26,43 @@ class SeasonSection extends StatelessWidget {
         Container(
           decoration: BoxDecoration(
             border: Border(
-              top: BorderSide(
-                color: theme.colorScheme.primary,
-                width: 3.0,
-              ),
-              bottom: BorderSide(
-                color: theme.colorScheme.primary,
-                width: 3.0,
-              ),
+              top: BorderSide(color: theme.colorScheme.primary, width: 3),
+              bottom: BorderSide(color: theme.colorScheme.primary, width: 3),
             ),
           ),
           child: Text(
-            season,
+            'Season: ${gardenAppState.selectedSeason}',
             style: TextStyle(
               fontSize: 24.0,
               fontWeight: FontWeight.bold,
+              fontFamily: 'Cursive',
               color: theme.colorScheme.onBackground,
             ),
           ),
         ),
         SizedBox(height: 10),
-        PlantList(onAddPlant: onAddPlant),
+        PlantList(
+          plants: gardenAppState.currentGardenSpace.seasonalPlants[season] ?? [],
+        ),
+        SizedBox(height: 10),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20.0),
+          child: TextField(
+            controller: gardenAppState.plantController,
+            decoration: InputDecoration(
+              border: OutlineInputBorder(),
+              labelText: 'Add a plant',
+              hintText: 'Enter plant name',
+              suffixIcon: IconButton(
+                onPressed: () {
+                  onAddPlant(gardenAppState.plantController.text);
+                },
+                icon: Icon(Icons.add),
+              ),
+            ),
+          ),
+        ),
       ],
     );
   }
 }
-

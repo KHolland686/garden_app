@@ -1,65 +1,126 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
+
+
+class GardenSpace {
+  //In order to add and manage multiple garden spaces, with their own plant and task lists
+  String name;
+  Map<String, List<String>> seasonalPlants;
+  Map<String, List<String>> seasonalTasks;
+  Map<String, List<bool>> taskCompletionStatus;
+  Map<String, List<bool>> plantCompletionStatus;
+
+  GardenSpace({
+    required this.name,
+    required this.seasonalPlants,
+    required this.seasonalTasks,
+    required this.taskCompletionStatus,
+    required this.plantCompletionStatus,
+  });
+
+  
+  Map<String, dynamic> toJson() {
+    // Convert GardenSpace to JSON
+    return {
+      'name': name,
+      'seasonalPlants': seasonalPlants,
+      'seasonalTasks': seasonalTasks,
+      'taskCompletionStatus': taskCompletionStatus.map((key, value) =>
+          MapEntry(key, value.map((e) => e ? 1 : 0).toList())),
+      'plantCompletionStatus': plantCompletionStatus.map((key, value) =>
+          MapEntry(key, value.map((e) => e ? 1 : 0).toList())),
+    };
+  }
+  
+  factory GardenSpace.fromJson(Map<String, dynamic> json) {
+    // Convert JSON to GardenSpace
+    return GardenSpace(
+      name: json['name'],
+      seasonalPlants: Map<String, List<String>>.from(json['seasonalPlants']),
+      seasonalTasks: Map<String, List<String>>.from(json['seasonalTasks']),
+      taskCompletionStatus: (json['taskCompletionStatus'] as Map<String, dynamic>).map(
+        (key, value) => MapEntry(key, (value as List).map((e) => e == 1).toList()),
+      ),
+      plantCompletionStatus: (json['plantCompletionStatus'] as Map<String, dynamic>).map(
+        (key, value) => MapEntry(key, (value as List).map((e) => e == 1).toList())),
+    );
+  }
+}
 
 class GardenAppState extends ChangeNotifier {
   //defines season change for buttons, seasonal tasks and plant lists, and themes
-  String selectedSeason = 'spring';
-  //change to depend on current date?
-  List<String> springPlants = ['Bok Choy', 'Spinach'];
-  List<String> summerPlants = ['Corn', 'Cucumbers'];
-  List<String> fallPlants = ['Spinach', 'Tulip bulbs'];
-  List<String> winterPlants = ['...'];
-  List<String> springTasks = []; // Define and initialize seasonal tasks
-  List<String> summerTasks = []; 
-  List<String> fallTasks = [];   
-  List<String> winterTasks = [];
-  List<String> taskCompletionStatus = [];
-  List<String> plantCompletionStatus = []; 
+  // String selectedSeason = 'spring';  
+  // Starting season depends on current date
+  String selectedSeason = getInitialSeason();
+  String selectedGardenSpace = 'Default';
+
+  Map<String, GardenSpace> gardenSpaces = {
+    'Default': GardenSpace(
+      name: 'Default',
+      seasonalPlants: {
+        'spring': ['Bok Choy', 'Spinach'],
+        'summer': ['Corn', 'Cucumbers'],
+        'fall': ['Spinach', 'Tulip bulbs'],
+        'winter': [],
+      },
+      seasonalTasks: {
+        'spring': [],
+        'summer': [],
+        'fall': [],
+        'winter': [],
+      },
+      taskCompletionStatus: {
+        'spring': [],
+        'summer': [],
+        'fall': [],
+        'winter': [],
+      },
+      plantCompletionStatus: {
+        'spring': [],
+        'summer': [],
+        'fall': [],
+        'winter': [],
+      },
+    ),
+  };
+
   final TextEditingController plantController = TextEditingController();
   final TextEditingController taskController = TextEditingController(); 
 
   GardenAppState() {
   // Load plant lists
-    SharedPreferences.getInstance().then((prefs) {
-      springPlants = prefs.getStringList('springPlants') ?? [];
-      summerPlants = prefs.getStringList('summerPlants') ?? [];
-      fallPlants = prefs.getStringList('fallPlants') ?? [];
-      winterPlants = prefs.getStringList('winterPlants') ?? [];
-      springTasks = prefs.getStringList('springTasks') ?? []; 
-      summerTasks = prefs.getStringList('summerTasks') ?? []; 
-      fallTasks = prefs.getStringList('fallTasks') ?? [];     
-      winterTasks = prefs.getStringList('winterTasks') ?? [];
+    loadGardenSpaces();
+  }
 
-      taskCompletionStatus = [
-              ...List.generate(springTasks.length, (index) => springTasks.isEmpty ? 'false' : springTasks[index] == '1' ? 'true' : 'false'),
-              ...List.generate(summerTasks.length, (index) => summerTasks[index] == '1' ? 'true' : 'false'),
-              ...List.generate(fallTasks.length, (index) => fallTasks[index] == '1' ? 'true' : 'false'),
-              ...List.generate(winterTasks.length, (index) => winterTasks[index] == '1' ? 'true' : 'false'),
-              ];
+static String getInitialSeason() {
+    // Get the current season based on the current date
+    DateTime now = DateTime.now();
+    if (now.month >= 3 && now.month <= 5) {
+      return 'spring';
+    } else if (now.month >= 6 && now.month <= 8) {
+      return 'summer';
+    } else if (now.month >= 9 && now.month <= 11) {
+      return 'fall';
+    } else {
+      return 'winter';
+    }
+}
 
-              // Initialize plant completion status based on stored string lists
-              plantCompletionStatus = [
-              ...List.generate(springPlants.length, (idx) => prefs.getStringList('springPlantsStatus')?[idx] == '1' ? 'true' : 'false'),
-              ...List.generate(summerPlants.length, (idx) => prefs.getStringList('summerPlantsStatus')?[idx] == '1' ? 'true' : 'false'),
-              ...List.generate(fallPlants.length, (idx) => prefs.getStringList('fallPlantsStatus')?[idx] == '1' ? 'true' : 'false'),
-              ...List.generate(winterPlants.length, (idx) => prefs.getStringList('winterPlantsStatus')?[idx] == '1' ? 'true' : 'false'),
-            ];
-            
-            notifyListeners();
-          });
-        } 
-        void togglePlantCompletionStatus(int idx) {
-          // Toggle the completion status of the plant at given index
-          plantCompletionStatus[idx] = 
-            plantCompletionStatus[idx] == 'true' ? 'false' : 'true';
-          notifyListeners();
-        }
+  Future<void> loadGardenSpaces() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? gardenSpacesJson = prefs.getString('gardenSpaces');
+    if (gardenSpacesJson != null) {
+      Map<String, dynamic> gardenSpacesMap = json.decode(gardenSpacesJson);
+      gardenSpaces = gardenSpacesMap.map((key, value) => MapEntry(key, GardenSpace.fromJson(value)));
+      notifyListeners();
+    }
+  }
 
-        void toggleTaskCompletionStatus(int idx) {
-          // Toggle the completion status of a task
-          taskCompletionStatus[idx] = 
-            taskCompletionStatus[idx] == 'true' ? 'false' : 'true';
-    notifyListeners();
+  Future<void> saveGardenSpaces() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String gardenSpacesJson = json.encode(gardenSpaces.map((key, value) => MapEntry(key, value.toJson())));
+    await prefs.setString('gardenSpaces', gardenSpacesJson);
   }
 
   void changeSeason(String season) {
@@ -68,70 +129,85 @@ class GardenAppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  void changeGardenSpace(String gardenSpace) {
+    selectedGardenSpace = gardenSpace;
+    notifyListeners();
+  }
+
+  void addGardenSpace(String gardenSpaceName) {
+    if (!gardenSpaces.containsKey(gardenSpaceName)) {
+      gardenSpaces[gardenSpaceName] = GardenSpace(
+        name: gardenSpaceName,
+        seasonalPlants: {
+          'spring': [],
+          'summer': [],
+          'fall': [],
+          'winter': [],
+        },
+        seasonalTasks: {
+          'spring': [],
+          'summer': [],
+          'fall': [],
+          'winter': [],
+        },
+        taskCompletionStatus: {
+          'spring': [],
+          'summer': [],
+          'fall': [],
+          'winter': [],
+        },
+        plantCompletionStatus: {
+          'spring': [],
+          'summer': [],
+          'fall': [],
+          'winter': [],
+        },
+      );
+      saveGardenSpaces();
+      notifyListeners();
+    }
+  }
+
+  GardenSpace get currentGardenSpace => gardenSpaces[selectedGardenSpace]!;
+
   void addPlant(String plantName) async{
     // adds plant to the correct season list
     if (plantName.isNotEmpty) {
-      switch (selectedSeason) {
-        case 'spring':
-          springPlants.add(plantName);
-          break;
-        case 'summer':
-          summerPlants.add(plantName);
-          break;
-        case 'fall':
-          fallPlants.add(plantName);
-          break;
-        case 'winter':
-          winterPlants.add(plantName);
-          break;
-        default:
-          throw 'Unknown season: $selectedSeason';
-      }
+      currentGardenSpace.seasonalPlants[selectedSeason]!.add(plantName);
+      currentGardenSpace.plantCompletionStatus[selectedSeason]!.add(false);
       plantController.clear();
+      saveGardenSpaces();
       notifyListeners();
-      // Save plant lists
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      prefs.setStringList('springPlants', springPlants);
-      prefs.setStringList('summerPlants', summerPlants);
-      prefs.setStringList('fallPlants', fallPlants);
-      prefs.setStringList('winterPlants', winterPlants);
     }
   }
-  
+
   void addTask(String taskName) async{
     // adds task to the correct season list
     if (taskName.isNotEmpty) {
-      switch (selectedSeason) {
-      case 'spring':
-        springTasks.add(taskName);
-        taskCompletionStatus.add("0"); // 0 represents unchecked
-        break;
-      case 'summer':
-        summerTasks.add(taskName);
-        taskCompletionStatus.add('0');
-        break;
-      case 'fall':
-        fallTasks.add(taskName);
-        taskCompletionStatus.add('0');
-        break;
-      case 'winter':
-        winterTasks.add(taskName);
-        taskCompletionStatus.add('0');
-        break;
-      default:
-        throw 'Unknown season: $selectedSeason';
+      currentGardenSpace.seasonalTasks[selectedSeason]!.add(taskName);
+      currentGardenSpace.taskCompletionStatus[selectedSeason]!.add(false);
+      taskController.clear();
+      saveGardenSpaces();
+      notifyListeners();
     }
-    taskController.clear();
-    notifyListeners();
-
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    prefs.setStringList('springTasks', springTasks);
-    prefs.setStringList('summerTasks', summerTasks);
-    prefs.setStringList('fallTasks', fallTasks);
-    prefs.setStringList('winterTasks', winterTasks);
-    prefs.setStringList('taskCompletionStatus', taskCompletionStatus); 
   }
-}
+
+  void togglePlantCompletionStatus(int idx) {
+    // Toggle the completion status of the plant at given index
+    currentGardenSpace.plantCompletionStatus[selectedSeason]![idx] = 
+      !currentGardenSpace.plantCompletionStatus[selectedSeason]![idx];
+    saveGardenSpaces();
+    notifyListeners();
+  }
+
+  void toggleTaskCompletionStatus(int idx) {
+    // Toggle the completion status of a task
+    currentGardenSpace.taskCompletionStatus[selectedSeason]![idx] = 
+      !currentGardenSpace.taskCompletionStatus[selectedSeason]![idx];
+    saveGardenSpaces();
+    notifyListeners();
+  }
+    
 ThemeData getTheme() {
     // for changing theme based on season
     switch (selectedSeason) {

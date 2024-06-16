@@ -1,46 +1,41 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:garden_app/Models/garden_app_state.dart';
+import 'package:garden_app/Widgets/garden_home_page.dart';
 
 
 class PlantList extends StatelessWidget {
   //For plant list
-  final Function(String) onAddPlant;
-
+  final List<String> plants;
+  
   const PlantList({
     super.key,
-    required this.onAddPlant,
-  });
+    required this.plants,});
 
   @override
   Widget build(BuildContext context) {
-    var gardenAppState  = Provider.of<GardenAppState>(context);
-    final List<String> plants;
-
-    switch (gardenAppState.selectedSeason) {
-      case 'spring':
-        plants = gardenAppState.springPlants;
-        break;
-      case 'summer':
-        plants = gardenAppState.summerPlants;
-        break;
-      case 'fall':
-        plants = gardenAppState.fallPlants;
-        break;
-      case 'winter':
-        plants = gardenAppState.winterPlants;
-        break;
-      default:
-        plants = [];
-    }
+    var gardenAppState  = context.watch<GardenAppState>();
+    List<String> plants = GardenHomePage().getSeasonalPlants(gardenAppState);
     ThemeData theme = Theme.of(context);
-    //card to contain the list of plants
+
+    //check for empty list
+    if (plants.isEmpty) {
+      return Text(
+        'No plants to display!',
+        style: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+          fontFamily: 'Cursive',
+          color: Theme.of(context).colorScheme.primary,
+        ),
+      );
+    }
+
     return Card(
       color: theme.colorScheme.primary,
       shadowColor: theme.colorScheme.onPrimary,
       elevation: 6,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(50.0),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(50.0)),
       child: SizedBox(
         width: 300,
         child: Column(
@@ -93,55 +88,104 @@ class PlantList extends StatelessWidget {
                 color: theme.colorScheme.background,
               ),
             ),
-            Column(
-              children: List.generate(
-                plants.length,
-                (idx) => ListTile(
-                  title: Row(
-                    children: [
-                      Checkbox(
-                        value: idx < gardenAppState.plantCompletionStatus.  length &&
-                          gardenAppState.plantCompletionStatus[idx] == 'true',
-                        onChanged: (value) {
-                          // Toggle task completion status
-                          gardenAppState.togglePlantCompletionStatus(idx);
-                        },
-                      ),
-                      Expanded(
-                        child: Text(
-                          plants[idx],
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: theme.colorScheme.onBackground,
-                            fontSize: 14.0,
-                            decoration: idx < gardenAppState.plantCompletionStatus.length && gardenAppState.plantCompletionStatus[idx] == 'true'
-                            ? TextDecoration.lineThrough
-                            : TextDecoration.none,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),  
-                ),
-              ),
+            ListView.builder(
+              shrinkWrap: true,
+              itemCount: plants.length,
+              itemBuilder: (context, index) {
+                final plant = plants[index];
+                final isCompleted = 
+                  gardenAppState.currentGardenSpace.plantCompletionStatus[gardenAppState.selectedSeason]?[index] ?? false;
+                return ListTile(
+                  leading: Checkbox(
+                    value: isCompleted,
+                    onChanged: (bool? value) {
+                      gardenAppState.togglePlantCompletionStatus(index);
+                    },
+                  ),
+                  title: Text(
+                    plant,
+                    style: TextStyle(
+                      decoration: isCompleted ? TextDecoration.lineThrough : TextDecoration.none,
+                    ),
+                  ),
+                );
+              },
             ),
           ],
         ),
       ),
     );
   }
-  List<String> getSeasonalPlants(GardenAppState gardenAppState) {
-    switch (gardenAppState.selectedSeason) {
-      case 'spring':
-        return gardenAppState.springPlants;
-      case 'summer':
-        return gardenAppState.summerPlants;
-      case 'fall':
-        return gardenAppState.fallPlants;
-      case 'winter':
-        return gardenAppState.winterPlants;
-      default:
-        return [];
-    }
-  }
 }
+
+//     switch (gardenAppState.selectedSeason) {
+//       case 'spring':
+//         plants = gardenAppState.springPlants;
+//         break;
+//       case 'summer':
+//         plants = gardenAppState.summerPlants;
+//         break;
+//       case 'fall':
+//         plants = gardenAppState.fallPlants;
+//         break;
+//       case 'winter':
+//         plants = gardenAppState.winterPlants;
+//         break;
+//       default:
+//         plants = [];
+//     }
+//     ThemeData theme = Theme.of(context);
+//     //card to contain the list of plants
+//     
+//             Column(
+//               children: List.generate(
+//                 plants.length,
+//                 (idx) => ListTile(
+//                   title: Row(
+//                     children: [
+//                       Checkbox(
+//                         value: idx < gardenAppState.plantCompletionStatus.  length &&
+//                           gardenAppState.plantCompletionStatus[idx] == 'true',
+//                         onChanged: (value) {
+//                           // Toggle task completion status
+//                           gardenAppState.togglePlantCompletionStatus(idx);
+//                         },
+//                       ),
+//                       Expanded(
+//                         child: Text(
+//                           plants[idx],
+//                           textAlign: TextAlign.center,
+//                           style: TextStyle(
+//                             color: theme.colorScheme.onBackground,
+//                             fontSize: 14.0,
+//                             decoration: idx < gardenAppState.plantCompletionStatus.length && gardenAppState.plantCompletionStatus[idx] == 'true'
+//                             ? TextDecoration.lineThrough
+//                             : TextDecoration.none,
+//                           ),
+//                         ),
+//                       ),
+//                     ],
+//                   ),  
+//                 ),
+//               ),
+//             ),
+//           ],
+//         ),
+//       ),
+//     );
+//   }
+//   List<String> getSeasonalPlants(GardenAppState gardenAppState) {
+//     switch (gardenAppState.selectedSeason) {
+//       case 'spring':
+//         return gardenAppState.springPlants;
+//       case 'summer':
+//         return gardenAppState.summerPlants;
+//       case 'fall':
+//         return gardenAppState.fallPlants;
+//       case 'winter':
+//         return gardenAppState.winterPlants;
+//       default:
+//         return [];
+//     }
+//   }
+// }
