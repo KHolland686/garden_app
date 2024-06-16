@@ -4,6 +4,7 @@ import 'package:garden_app/Models/garden_app_state.dart';
 import 'package:garden_app/Widgets/header.dart';
 import 'package:garden_app/Widgets/season_section.dart';
 import 'package:garden_app/Widgets/tasks.dart';
+import 'package:garden_app/Widgets/plant_list.dart';
 // import
 
 class GardenHomePage extends StatelessWidget {
@@ -39,48 +40,36 @@ class GardenHomePage extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        gardenAppState.changeSeason('spring');
-                      },
-                      icon: Icon(
-                        Icons.emoji_nature,
-                        color: Colors.green.shade300,
-                      ),
-                      label: Text('Spring'),
+                    buildSeasonButton(
+                      context,
+                      'spring',
+                      Icons.emoji_nature,
+                      Colors.purple.shade200,
+                      'Spring',
                     ),
                     SizedBox(width: 10),
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        gardenAppState.changeSeason('summer');
-                      },
-                      icon: Icon(
-                        Icons.wb_sunny,
-                        color: Colors.amber.shade300,
-                      ),
-                      label: Text('Summer'),
+                    buildSeasonButton(
+                      context,
+                      'summer',
+                      Icons.wb_sunny,
+                      Colors.amber.shade300,
+                      'Summer',
                     ),
                     SizedBox(width: 10),
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        gardenAppState.changeSeason('fall');
-                      },
-                      icon: Icon(
-                        Icons.eco,
-                        color: Colors.orange.shade300,
-                      ),
-                      label: Text('Fall'),
+                    buildSeasonButton(
+                      context,
+                      'fall',
+                      Icons.eco,
+                      Colors.orange.shade300,
+                      'Fall',
                     ),
                     SizedBox(width: 10),
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        gardenAppState.changeSeason('winter');
-                      },
-                      icon: Icon(
-                        Icons.ac_unit,
-                        color: Colors.blueGrey.shade300,
-                      ),
-                      label: Text('Winter'),
+                    buildSeasonButton(
+                      context,
+                      'winter',
+                      Icons.ac_unit,
+                      Colors.blueGrey.shade300,
+                      'Winter',
                     ),
                   ],  
                 ),
@@ -90,6 +79,9 @@ class GardenHomePage extends StatelessWidget {
                 onAddPlant: gardenAppState.addPlant,
               ),
               SizedBox(height: 20),
+              PlantList(
+                plants: getSeasonalPlants(gardenAppState),
+              ),
               Tasks(
                 onAddTask: gardenAppState.addTask,
                 tasks: getSeasonalTasks(gardenAppState),
@@ -100,19 +92,71 @@ class GardenHomePage extends StatelessWidget {
       ),
     );
   }
+
   List<String> getSeasonalTasks(GardenAppState gardenAppState) {
     //returns the correct task list based on season
-    switch (gardenAppState.selectedSeason) {
+    return gardenAppState.currentGardenSpace.seasonalTasks[gardenAppState.selectedSeason]!;
+  }
+
+  List<String> getSeasonalPlants(GardenAppState gardenAppState) {
+    //returns the correct plant list based on season
+    return gardenAppState.currentGardenSpace.seasonalPlants[gardenAppState.selectedSeason]!;
+  }
+
+  Widget buildSeasonButton(
+    BuildContext context,
+    String season,
+    IconData icon,
+    Color iconColor,
+    String label,
+  ) {
+    //builds a button for each season
+    var gardenAppState = context.watch<GardenAppState>();
+    ThemeData theme = Theme.of(context);
+
+    Color buttonBackgroundColor;
+    Color buttonTextColor = theme.colorScheme.onBackground;
+
+  // Determine button colors based on the selected season
+    switch (gardenAppState.selectedSeason) { 
       case 'spring':
-        return gardenAppState.springTasks;
+        buttonBackgroundColor = Colors.green.shade300;
+        break;
       case 'summer':
-        return gardenAppState.summerTasks;
+        buttonBackgroundColor = Colors.pink.shade300;
+        break;
       case 'fall':
-        return gardenAppState.fallTasks;
+        buttonBackgroundColor = Colors.brown.shade300;
+        break;
       case 'winter':
-        return gardenAppState.winterTasks;
-      default:
-        return [];
+        buttonBackgroundColor = Colors.deepPurple.shade300;
+        break;
+        default:
+        buttonBackgroundColor = Colors.grey.shade300;
+        break;
     }
+
+    return ElevatedButton.icon(
+      onPressed: () {
+        gardenAppState.selectedSeason = season;
+      },
+      icon: Icon(
+        icon,
+        color: iconColor,
+      ),
+      label: Text(
+        label,
+        style: TextStyle(
+          color: buttonTextColor,
+          fontSize: 16.0,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: buttonBackgroundColor,
+        foregroundColor: buttonTextColor,
+        // padding: EdgeInsets.symmetric(horizontal: 10.0),
+      ),
+    );
   }
 }
